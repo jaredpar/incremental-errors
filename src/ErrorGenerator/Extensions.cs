@@ -13,12 +13,13 @@ internal static class Extensions
         this SourceProductionContext context,
         DiagnosticDescriptor descriptor,
         string filePath,
-        TextSpan textSpan)
+        TextSpan textSpan,
+        params object?[]? messageArgs)
     {
         var compilationInfo = context.GetType().GetField("Compilation", BindingFlags.Instance | BindingFlags.NonPublic);
         var compilation = (Compilation)compilationInfo.GetValue(context);
         var syntaxTree = compilation.SyntaxTrees.Single(x => x.FilePath == filePath);
-        var diagnostic = Diagnostic.Create(descriptor, Location.Create(syntaxTree, textSpan));
+        var diagnostic = Diagnostic.Create(descriptor, Location.Create(syntaxTree, textSpan), messageArgs);
         context.ReportDiagnostic(diagnostic);
     }
 }

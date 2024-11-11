@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
-using ErrorData = (string FileName, Microsoft.CodeAnalysis.Text.TextSpan TextSpan);
+using ErrorData = (string FileName, Microsoft.CodeAnalysis.Text.TextSpan TextSpan, string Argument, int Position);
 
 #pragma warning disable RS2008 // Enable analyzer release tracking
 namespace ErrorGenerator;
@@ -16,8 +16,8 @@ public sealed class ErrorGenerator : IIncrementalGenerator
     public static readonly DiagnosticDescriptor ErrorInAttribute =
         new DiagnosticDescriptor(
             "ESG0001",
-            "Error in message",
-            "Error in message",
+            "Illegal character in message",
+            @"Illegal character '{0}' in message ""{1}""",
             nameof(ErrorGenerator),
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -61,7 +61,7 @@ public sealed class ErrorGenerator : IIncrementalGenerator
                         {
                             var span = new TextSpan(context.TargetNode.Span.Start + count, 1);
                             count++;
-                            list.Add((context.TargetNode.SyntaxTree.FilePath, span));
+                            list.Add((context.TargetNode.SyntaxTree.FilePath, span, message, i));
                         }
                     }
                 }
@@ -74,7 +74,12 @@ public sealed class ErrorGenerator : IIncrementalGenerator
         {
             foreach (var error in model.Errors)
             {
-                context.ReportDiagnostic(ErrorInAttribute, error.FileName, error.TextSpan);
+                context.ReportDiagnostic(
+                    ErrorInAttribute,
+                    error.FileName,
+                    error.TextSpan,
+                    error.Argument[error.Position],
+                    error.Argument);
             }
         }
     }

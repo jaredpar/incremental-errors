@@ -41,29 +41,29 @@ public class ErrorGeneratorTests
     }
 
     private void VerifyDiagnostics(
-        (string FilePath, int start)[] expected,
+        (string FilePath, int Start, string? Message)[] expected,
         ImmutableArray<Diagnostic> actual)
     {
         Assert.Equal(expected.Length, actual.Length);
         for (int i = 0; i < expected.Length; i++)
         {
-            var (expectedFilePath, expectedStart) = expected[i];
+            var (expectedFilePath, expectedStart, expectedMessage) = expected[i];
             var diagnostic = actual[i];
             Assert.Equal(expectedFilePath, diagnostic.Location.SourceTree?.FilePath);
 
             var expectedTextSpan = new TextSpan(expectedStart, 1);
             Assert.Equal(expectedTextSpan, diagnostic.Location.SourceSpan);
+
+            if (expectedMessage is not null)
+            {
+                Assert.Equal(expectedMessage, diagnostic.GetMessage());
+            }
         }
     }
 
     [Fact]
     public void Simple()
     {
-        var code = """
-            [Error("Hello?")]
-            class C { }
-            """;
-
         var result = Run("""
             [Error("Hello?")]
             class C { }
@@ -71,7 +71,7 @@ public class ErrorGeneratorTests
 
         VerifyDiagnostics(
             [
-                ("file.cs", 0)
+                ("file.cs", 0, @"Illegal character '?' in message ""Hello?"""),
             ], result.Diagnostics);
 
         result = Run("""
@@ -80,8 +80,8 @@ public class ErrorGeneratorTests
             """, "file.cs");
         VerifyDiagnostics(
             [
-                ("file.cs", 0),
-                ("file.cs", 1)
+                ("file.cs", 0, null),
+                ("file.cs", 1, null),
             ], result.Diagnostics);
 
         result = Run("""
